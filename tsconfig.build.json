@@ -2,7 +2,7 @@
     "compilerOptions": {
       "types": ["node", "jest"],
       "paths": {
-        "@/*": ["./src/*"]
+        "@/*": ["./src/*", "./dist/src/*"]
       },
       // use modern features
       "target": "ES2020",
@@ -23,5 +23,5 @@
       "noFallthroughCasesInSwitch": true,
     },
     "include": ["src/**/*", "db/connection.ts"],
-    "exclude": ["node_modules", "dist", "bd/seed", "db/utils", "tests", "dist", "node_modules"]
+    "exclude": ["node_modules", "dist", "bd/seed", "db/utils", "tests", "dist"]
   }

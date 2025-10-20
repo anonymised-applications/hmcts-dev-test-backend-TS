@@ -1,0 +1,58 @@
+service: chartsy-api
+frameworkVersion: "3"
+useDotenv: true
+
+provider:
+  name: aws
+  runtime: nodejs20.x
+  region: eu-west-2
+  deploymentBucket:
+    name: serverless-framework-deployments-eu-west-2-4503d36b-608c
+  environment:
+    NODE_ENV: production # or: ${opt:stage, 'dev'}
+    DATABASE_URL: ${env:DATABASE_URL}
+  httpApi:
+    cors:
+      allowedOrigins:
+        - http://localhost:5173
+        - http://localhost:3000
+        - https://dck7gx4ukouvd.cloudfront.net
+      allowedMethods:
+        - GET
+        - POST
+        - PUT
+        - PATCH
+        - DELETE
+        - OPTIONS
+      allowedHeaders:
+        - Content-Type
+        - Authorization
+        - X-Requested-With
+        - x-api-key
+      allowCredentials: true
+      maxAge: 86400
+
+functions:
+  api:
+    handler: src/lambda.handler
+    events:
+      - httpApi:
+          path: /{proxy+}
+          method: "*"
+
+package:
+  individually: true
+
+plugins:
+  - serverless-esbuild
+
+custom:
+  esbuild:
+    bundle: true
+    platform: node
+    target: node20
+    tsconfig: tsconfig.json
+    external:
+      - pg-native
+    exclude:
+      - aws-sdk

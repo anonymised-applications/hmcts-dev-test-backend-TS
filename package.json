@@ -1,23 +1,40 @@
 {
-  "name": "hmcts-dev-test-backend-TS",
+  "name": "chartsyBE",
   "version": "1.0.0",
   "description": "",
   "main": "index.ts",
   "_moduleAliases": {
-    "@": "dist"
+    "@": "dist/src"
   },
   "scripts": {
-    "start": "node dist/index.js",
+    "prestart": "npm run build",
+    "start": "NODE_ENV=production LOCAL=true node dist/src/index.js",
     "dev": "nodemon --watch src --exec ts-node -r tsconfig-paths/register src/index.ts",
     "dist:clean": "rm -rf dist",
-    "build": "pnpm dist:clean && tsc -p tsconfig.build.json",
-    "db:create": "psql -f db/seed/createDB.sql && ts-node db/seed/seedDB.ts",
-    "db:seed": "ts-node db/seed/seedDB.ts",
-    "db:delete": "psql -f db/seed/deleteDB.sql",
-    "test": "jest"
+    "build": "npm run dist:clean && tsc -p tsconfig.build.json",
+    "db:new-file:schema": "func() { touch db/schema/$(date +\"%Y%m%d_%H%M\")_$1.sql } && echo \"New migration created: $1\"; }; func",
+    "db:new-file:seed": "func() { touch db/seeds/$(date +\"%Y%m%d_%H%M\")_$1.sql } && echo \"New seed created: $1\"; }; func",
+    "db:resetDatabase:local": "psql -v ON_ERROR_STOP=1 -d postgres -f db/scripts/reset_local.sql && npm run db:seedJSON:local",
+    "db:insert:min": "psql -v ON_ERROR_STOP=1 -d chartsydb -f db/seeds/20250829_1502_minimal.sql",
+    "db:wipe:data:all": "bash -c 'read -p \"⚠️  This will DELETE ALL DATA in local chartsydb. Type yes to continue: \" ans && [ \"$ans\" = \"yes\" ] && psql -v ON_ERROR_STOP=1 -d chartsydb -f db/seeds/20250829_1557_truncate_all.sql || echo \"❌ Cancelled\"'",
+    "db:reset:data": "npm run db:wipe:data:all && npm run db:seedJSON:local",
+    "db:delete:local": "psql -f db/deleteDB.sql",
+    "db:seedJSON:local": "NODE_ENV=development ts-node db/seeds/seedDBJSON.ts",
+
+
+
+    "db:create:neon:prod": "",
+    "db:seed:neon:prod": "NODE_ENV=neon ts-node db/seed/seedDB.ts",
+    "test": "jest",
+    "empty-bucket": "aws s3 rm s3://serverless-framework-deployments-eu-west-2-4503d36b-608c --recursive",
+    "build:serverlessDist": "dotenv -e .env.production -- serverless package",
+    "lambda:deploy": "dotenv -e .env.production -- serverless deploy",
+    "lambda:deploy:code-only": "dotenv -e .env.production -- serverless deploy function --function api",
+    "CI/CD_processes:start": "bash ~/src/scripts/CICD_processes.sh chartsyBE"
   },
   "dependencies": {
     "@types/express": "^5.0.1",
+    "@vendia/serverless-express": "^4.12.6",
     "axios": "^1.8.4",
     "cors": "^2.8.5",
     "dotenv": "^16.5.0",
@@ -26,18 +43,21 @@
     "pg": "^8.14.1"
   },
   "devDependencies": {
-    "@types/axios": "^0.14.4",
     "@types/cors": "^2.8.17",
     "@types/jest": "^29.5.14",
     "@types/node": "^22.14.1",
     "@types/pg": "^8.11.13",
     "@types/supertest": "^6.0.3",
+    "chartsy-types": "^2.6.1",
+    "dotenv-cli": "^8.0.0",
+    "eslint": "^9.26.0",
     "nodemon": "^3.1.9",
+    "prettier": "^3.5.3",
+    "serverless-esbuild": "^1.55.1",
     "supertest": "^7.1.0",
     "ts-jest": "^29.3.2",
     "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.2.0",
     "typescript": "^5.1.6"
-  },
-  "packageManager": "pnpm@10.8.1+sha512.c50088ba998c67b8ca8c99df8a5e02fd2ae2e2b29aaf238feaa9e124248d3f48f9fb6db2424949ff901cffbb5e0f0cc1ad6aedb602cd29450751d11c35023677"
+  }
 }

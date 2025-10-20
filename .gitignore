@@ -20,5 +20,8 @@ node_modules
 .env.**
 
 dist
+.serverless
+
+/scripts
 
 TODO.md

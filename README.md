@@ -1,50 +1,127 @@
-# -hmcts-dev-test-backend-TS
-- setup ssh for second/anonymised github account
-- init yarn
-- init typescript
-- add express, nodemon & ts-node, scripts in package.json
-- configure tsconfig - try ES2020 rather than ES6, strict checks all around, allow all types of import/module handling. skipLibCheck as security not necessary for this purpose. add @ alias for import paths
-- add minimal get endpoint and test
-- ignore dist and future .env dir/file
-- match express and typescript versions to front end
-- add sdk settings for types to work correctly with yarn pnp architecture
-- false type errors persist
-- sdk typescript version needs to be 5.4.6 with package.json version 5.1.6 for it to work - should not be this way
-- changed to pnpm to avoid yarn/pnp typescript version mismatch hacky fix
-- add package, pg, axios, dotenv and associated types packages
-- ensure db table columns have not null on appropriate columns
-- add db:create and delete to pac kage.json scripts
--create also runs seed and uses commands psql <path> and ts-node <path> to run files at paths
--ensure tsconfig includes all files in src and in db dirs - had to explicitly point to db as is outside of source (personal preference but may not be standard practice as tsconfig didn't seem to like it)
-- create connection.ts and env file (development only at this point) to create pool to connect to 
--had to install pg on machine and create initial db (of computer user name) to connect to and allow createdb.sql to then connect to other DBs ie the one used in this service
--create createDB, deleteDB, deleteTasksconent sql files to be ran
--createDB.sql drops then creates our single table with contstraints
--delete db deletes db
--deletetaskscontent.sql removes all data from our single table (TODO remove if not used as is not currently)
--env needs PGDATABASE=databasename and BASE_URL=baseurl vars
--seed db creates connection to server and deletes all table data then calls postTasks to seed data from tasks.json
--post endpoint created in index.ts to be refactored into model and controller
--post endpoint handles sql injection (TODO: test and add further protection if needed)
--ensure env is git ignored
--add ts-jest and types package and add tests dir to tsconfig allow list
--add jest.config.ts as using ts-jest for typecript
--add tests dir and test to package.json scripts
--add single test
--had to separate src/index.ts into app.ts and index.ts to prevent jest from hanging because of unnecessary server connection being opened as supertest handles creation of connection for test purposes
--needed separate .env.test file as jest points to the env file by default
--ensure db connection is closed after all tests ran
--ensure test fails first
--used thunder client for http requests
--fix @ alias with module-alias/register package
--fix seedDB to use for of loop in place of for each as for each is not async
--add date checking in seed for better errors and try catch
--ensure runSeed is awaited as logs were out of sync
--add interfaces
--extract task jest test functionality from getTasks to reuse for get task
--fix seeding: add await to truncate (delete contents of table) query to ensure it had finished before posting dummy data
--refactor to use model and controller pattern
--add error handling middleware
-- add cors to be able to connect from external project
+how to:
+create local DB
+seed local DB
+seed neon prod DB
+delete db
+start for prod
+start for dev including build - does this pre-start run before any more scripts (node docs)
+dist clean
+empty bucket
+testing - do not have local server running already?
+build for prod
+deploy to lambda
+  need to have serverless installed (best globally unless in a docker pipeline as docker will need it) CLI for managing serverless applications. It will build in the 
+  @vendia/serverless-express wraps the express app so it can run in a lambda function - defined by serverless.yml
+  .nvmrc NEEDS TO MATCH serverless.yml as this is what will be deployed (use latest stable version supported by lambda)
+  lambda authorizations must be correct:
+    allow:
+Lambda & Logs
+	•	lambda:* — Full access to Lambda functions
+	•	logs:* — Full access to CloudWatch Logs (for function logging)
+
+API Gateway
+	•	apigateway:* — Manage API Gateway (used for exposing endpoints)
+
+IAM (for Lambda execution roles)
+	•	iam:PassRole
+	•	iam:GetRole
+	•	iam:CreateRole
+	•	iam:AttachRolePolicy
+	•	iam:TagRole
+	•	iam:UntagRole
+	•	iam:PutRolePolicy
+	•	iam:DeleteRolePolicy
+
+CloudFormation
+	•	cloudformation:CreateStack
+	•	cloudformation:DeleteStack
+	•	cloudformation:DescribeStacks
+	•	cloudformation:DescribeStackResources
+	•	cloudformation:DescribeStackEvents
+	•	cloudformation:DescribeStackResource
+	•	cloudformation:GetTemplate
+	•	cloudformation:UpdateStack
+	•	cloudformation:ValidateTemplate
+	•	cloudformation:ListStackResources
+  •	cloudformation:DescribeChangeSet
+  •	cloudformation:CreateChangeSet
+  •	cloudformation:DeleteChangeSet
+  •	cloudformation:ExecuteChangeSet
+
+SSM Parameter Store (optional, for secrets/config)
+	•	ssm:GetParameter
+	•	ssm:PutParameter
+	•	ssm:DeleteParameter
+
+These are scoped to:
+arn:aws:ssm:eu-west-2:<account-id>:parameter/serverless-framework/*
+
+S3 (for deployment artifacts and frontend assets)
+	•	s3:GetBucketLocation
+	•	s3:CreateBucket
+	•	s3:ListBucket
+	•	s3:GetObject
+	•	s3:PutObject
+	•	s3:DeleteObject
+	•	s3:DeleteBucket
+
+Target buckets include:
+	•	serverless-framework-deployments-eu-west-2-...
+	•	chartsy-fe
+
+CloudFront (optional, for frontend cache invalidation)
+	•	cloudfront:CreateInvalidation
+	•	cloudfront:GetInvalidation
+
+Resource: arn:aws:cloudfront::<account-id>:distribution/<distribution-id>
+or "Resource": "arn:aws:lambda:REGION:ACCOUNT_ID:function:FUNCTION_NAME"
+
+Cost Explorer (optional, for cost monitoring)
+	•	ce:GetCostAndUsage
+	•	ce:GetCostForecast
+	•	ce:GetDimensionValues
+	•	ce:GetReservationUtilization
+    cloudformation:DeleteChangeSet on resource: <correct resource>
+
+    Resources set to "*" or specified where appropriate
 
 
+
+how serverless works and steps to use it
+
+endpoints explanations
+
+overview of whole project
+overview of BE project
+overview of file structure
+suggested to have AWS CLI globally installed
+
+lambda is paired with AWS cloudfront CDN (content delivery network - caching content at edge locations, provides signed URLs and cookies. performance and security). AWS Lambda runs code in response to requests or events, without the need to manage servers. It only runs when invoked, which reduces costs compared to always-on servers.
+Lambda puts the api into an S3 bucket
+AWS docs: https://docs.aws.amazon.com/lambda/latest/dg/lambda-permissions.html#:~:text=Every%20Lambda%20function%20must%20have,role%20to%20satisfy%20this%20requirement.
+Use a least-privilege permissions approach for security
+You define the permissions that your Lambda function needs in a special IAM role called an execution role. In this role, you can attach a policy that defines every permission your function needs to access other AWS resources, and read from event sources. Every Lambda function must have an execution role. At a minimum, your execution role must have access to Amazon CloudWatch because Lambda functions log to CloudWatch Logs by default. You can attach the AWSLambdaBasicExecutionRole managed policy to your execution role to satisfy this requirement.
+!! Use IAM Access Analyzer to help identify the required permissions for the IAM execution role policy and also discover unused permissions - some features free some not
+
+AWS has a root user and an IAM user - logged in as root user in AWS CLI but it is IAM user which has permissions by attached policy to said user or you can have resource-based policies are attached directly to a Lambda function. For simple scenarios with a few resources, a resource-based policy is adequate and easier to manage. However, as your environment grows, IAM roles are recommended.
+
+!! once initial deployment has happened ensure the serverless.yaml points to that bucket for re-deployments
+
+serverless ESBuild is included out of the box for treeshaking to ensure upload to S3 bucket is within max file size
+
+package manager, environment etc
+
+start cicd processes with local script pointed to in package.json, github_pat needed in .env.CICD
+
+jenkins pipeline will create an ephemeral copy of prod DB to test realistic data
+it will mask sensitive data to protect said data if there is a security breach
+
+gitpat for cicd processes script is in .env.CICD in repo
+
+llambda function name is structured:
+<service>-<stage>-<functionLogicalName>
+equalling currently for this project:
+chartsy-api-dev-api
+or service: chartsy-api, stage: dev, functionalLogicalName: api
+
+had issues with cors after finishing jenkins pipeline (unknown cause of change - TODO: find out WHY? cors had basic setup and was working then was deployed via jenkins and immediately broke and needed expanded setup in serverless.yml) in serverless.yml I have explicitly added localhost:5173 as an origin - THIS MAY NEED TO BE CHANGED IF FE LOCALHOST CHANGES DURING DEVELOPMENT
